@@ -77,6 +77,24 @@ fn dom_get_v(dom_view: &[u8], j: usize) -> usize {
     unreachable!();
 }
 
+fn count_b(dom_view: &[u8], out: &mut u8, blk: usize) {
+    let mut s = 0u8;
+    for &offset in [0, 1, 2, 9, 10, 11, 18, 19, 20].iter() {
+        s += dom_view[blk+offset];
+    }
+    *out = s;
+}
+
+fn dom_get_b(dom_view: &[u8], blk: usize) -> (usize, usize) {
+    for &offset in [0, 1, 2, 9, 10, 11, 18, 19, 20].iter() {
+        let ptr = blk+offset;
+        if dom_view[ptr] > 0 {
+            return (ptr / 9, ptr % 9);
+        }
+    }
+    unreachable!();
+}
+
 fn dom_zero(dom: &mut [u8], i: usize, j: usize) {
     let pt = i * 9 + j;
     for offset in (0..9).map(|x| {x*81}).into_iter() {
@@ -110,19 +128,12 @@ fn main() {
 
     let mut dom = vec![1u8; 9*9*9];
 
-    for i in 0..9 {
-        for j in 0..9 {
-            if x[i*9+j] > 0 {
-                dom_zero(&mut dom, i, j);
-            }
-        }
-    }
-
     for _k in 0..n {
         for i in 0..9 {
             for j in 0..9 {
                 let v = x[i*9+j];
                 if v>0 {
+                    dom_zero(&mut dom, i, j);
                     let idx = (v - 1) as usize;
                     let view = &mut dom[idx*81..(idx + 1)*81];
                     eliminate_h(view, i);
@@ -141,7 +152,7 @@ fn main() {
 
                 if *out == 1 {
                     let v = dom_get(&dom, i, j);
-                    println!("[{}, {}] ← {}", i+1, j+1, v);
+                    println!("[{}, {}] ← {} (constraint)", i+1, j+1, v);
                     x[i*9+j] = v;
                 }
             }
@@ -156,7 +167,7 @@ fn main() {
                 if *out == 1 {
                     let j = dom_get_h(view, i);
                     let v = (idx + 1) as u8;
-                    println!("[{}, {}] ← {}", i+1, j+1, v);
+                    println!("[{}, {}] ← {} (h scan)", i+1, j+1, v);
                     x[i*9+j] = v;
                 }
             }
@@ -171,7 +182,22 @@ fn main() {
                 if *out == 1 {
                     let i = dom_get_v(view, j);
                     let v = (idx + 1) as u8;
-                    println!("[{}, {}] ← {}", i+1, j+1, v);
+                    println!("[{}, {}] ← {} (v scan)", i+1, j+1, v);
+                    x[i*9+j] = v;
+                }
+            }
+        }
+
+        for idx in 0..9 {
+            for (i_blk, &blk) in [0, 3, 6, 27, 30, 33, 54, 57, 60].iter().enumerate() {
+                let out = &mut mat_p[idx*9+i_blk];
+                let view = &dom[idx*81..(idx + 1)*81];
+                count_b(view, out, blk);
+
+                if *out == 1 {
+                    let (i, j) = dom_get_b(view, blk);
+                    let v = (idx + 1) as u8;
+                    println!("[{}, {}] ← {} (blk)", i+1, j+1, v);
                     x[i*9+j] = v;
                 }
             }
