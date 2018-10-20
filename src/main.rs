@@ -20,6 +20,13 @@ fn eliminate_b(dom_view: &mut [u8], idx: usize, i: usize, j: usize) {
     }
 }
 
+fn debug_view(dom_view: &[u8]) {
+    for i in 0..9 {
+        let r = &dom_view[i*9..(i+1)*9];
+        println!("{} {} {} {} {} {} {} {} {}", r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+    }
+}
+
 fn main() {
     let mut x = vec![
         0u8, 0, 7, 0, 0, 0, 3, 0, 2,
@@ -47,5 +54,7 @@ fn main() {
             }
         }
     }
+
+    debug_view(&dom[(1*81)..(2*81)]);
 
 }
